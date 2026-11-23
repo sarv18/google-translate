@@ -1,0 +1,43 @@
+version: '3.8'
+
+networks:
+  app-tier:
+    driver: bridge
+
+services:
+  google-translator:
+    build: .
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 3G
+    environment:
+      - GOOGLE_TRANSLATOR=/home/code
+      - GOOGLE_TRANSLATOR_DATA=/home/data
+      - DEBUG=False
+      - IN_DOCKER=True
+      - APP_MAIN_PORT=3131
+    ports:
+      - "5000"
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "2"
+        max-size: "1G"
+    volumes:
+      - ./google_translator_data:/home/data
+      - ./:/home/code:ro
+    networks:
+      - app-tier
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile.nginx
+    depends_on:
+      - google-translator
+    ports:
+      - "3131:3131"
+    networks:
+      - app-tier
